@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Как команда Claude Code проверяет код агентов · визуальный конспект</title>
+<meta name="theme-color" content="#f5f0e8">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&display=swap">
+<style data-reading-theme="v1">
+/* Книжная тема дайджестов v1. Описание и примеры: reading-theme.md. Вставляет apply-reading-theme.py. */
+:root{
+  --bg:#f5f0e8; --card:#fffdf9; --ink:#2b2826; --muted:#6b655f; --faint:#9a938b;
+  --line:#e8dfd2; --accent:#b0603d; --accent-soft:#f7e4d7; --sage:#4d6a50; --sage-soft:#e3ede2;
+  --lav-soft:#ebe7f5; --sky-soft:#e2ecf3; --code:#f1eae0;
+  --r:22px; --gap:12px;
+  --sans:"Golos Text","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:72px;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.62 var(--sans);overflow-wrap:break-word}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline;text-underline-offset:3px}
+img{max-width:100%;height:auto}
+b,strong{font-weight:600}
+h1,h2,h3,h4{font-family:var(--sans);color:var(--ink);margin:0;letter-spacing:-.01em}
+h1{font-size:44px;line-height:1.1;font-weight:700;margin:6px 0 16px}
+h2{font-size:30px;line-height:1.15;font-weight:700}
+h3{font-size:24px;line-height:1.25;font-weight:700}
+h3 a{color:inherit}
+h4{font-size:18px;line-height:1.3;font-weight:600}
+p{margin:0 0 12px}
+ul,ol{margin:0 0 12px;padding-left:22px}
+li{margin:0 0 7px}
+li::marker{color:var(--accent)}
+code,.k{font-family:var(--mono);font-size:.86em;background:var(--code);color:#5b4636;padding:1px 5px;border-radius:5px;overflow-wrap:anywhere;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+pre{background:var(--code);border-radius:12px;padding:12px 14px;overflow:auto;font-size:14px}
+pre code{background:none;padding:0}
+.accent,.em{color:var(--accent)}
+.hidden{display:none!important}
+[hidden]{display:none!important}
+#progress,.dot,.lk,.shot .zoom:not(button),.rv-hide{display:none!important}
+.rv{opacity:1!important;transform:none!important}
+
+/* Layout */
+.wrap{max-width:780px;margin:0 auto;padding:0 20px}
+main{display:block}
+section{margin:0 auto}
+footer{text-align:center;color:var(--faint);font-size:14px;padding:48px 20px 64px}
+
+/* Navigation: one line, scrolls sideways on phones */
+nav{position:sticky;top:0;z-index:40;background:rgba(245,240,232,.92);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.nav-in{max-width:780px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:16px}
+.brand{font-weight:700;font-size:15px;color:var(--ink);white-space:nowrap}
+.nav-links{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;margin-left:auto;-webkit-overflow-scrolling:touch}
+.nav-links::-webkit-scrollbar{display:none}
+.nav-links a{white-space:nowrap;color:var(--muted);font-size:15px;padding:6px 12px;border-radius:999px}
+.nav-links a:hover{text-decoration:none;color:var(--ink)}
+.nav-links a.active{background:var(--accent-soft);color:var(--accent)}
+.nav-links small{color:var(--faint);margin-left:3px}
+
+/* Hero */
+.hero{padding-top:44px;padding-bottom:8px}
+header.hero:not(.wrap){max-width:none;padding-left:0;padding-right:0}
+.eyebrow{display:inline-block;color:var(--accent);font-size:14px;font-weight:600;letter-spacing:.02em;margin:0 0 4px}
+.sub,.hero>.lead,.hero .wrap>.lead{font-size:19px;line-height:1.55;color:var(--muted);margin-bottom:18px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 22px}
+.chip{background:var(--card);border-radius:999px;padding:6px 14px;font-size:14.5px;color:var(--muted)}
+.chip b{color:var(--ink)}
+
+/* Blocks: white rounded panels on pastel background */
+.talk,.box,.review-box,.watch-item,.meta,.funnel,.trick,.item,.card,.radar-wrap,.filtered{background:var(--card);border-radius:var(--r);padding:28px 32px;margin:0 0 var(--gap)}
+.talk .lab,.box h2{font-size:15px;font-weight:600;color:var(--accent);margin:0 0 8px;letter-spacing:0}
+.talk p:last-child,.box>*:last-child{margin-bottom:0}
+
+/* Section heads */
+.shead{display:flex;align-items:center;gap:12px;margin:56px 0 18px}
+.shead .num{display:inline-flex;align-items:center;justify-content:center;min-width:38px;height:38px;padding:0 8px;border-radius:12px;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:16px}
+.shead .count{color:var(--faint);font-size:16px;font-weight:600}
+section>.lead,.wrap>.lead,.topic-intro .lead{color:var(--muted);font-size:17px;margin:-6px 0 18px}
+.topic-intro{margin:0}
+.grid,.tricks,.items,.watch{display:block}
+
+/* Card anatomy */
+.trick-head,.item-head,.card-top{display:block;margin:0 0 6px}
+.tnum{display:block;color:var(--faint);font-size:14px;font-weight:600;letter-spacing:.04em;margin:0 0 4px}
+.card-top{color:var(--faint);font-size:14px}
+.card-top span{margin-right:8px}
+.who,.byline,.card .meta,.date,.srcline{color:var(--muted);font-size:14.5px}
+.who,.byline{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin:8px 0 18px}
+.byline span{color:var(--faint)}
+.au{font-weight:600}
+.src-tag,.rt,.lbl{color:var(--faint)}
+.cat,.tag{display:inline-block;background:var(--lav-soft);color:#5a5470;border-radius:999px;padding:1px 10px;font-size:13px}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}
+.card .meta{background:none;padding:0;border-radius:0;margin:8px 0 6px}
+.orig{color:var(--faint);font-size:14.5px;font-style:italic;margin-bottom:12px}
+.lead-in,.gist,.copy p,.about p{font-size:17.5px}
+.problem{font-weight:400}
+.lab,.try-lab,.point-label,.flow-label,.apply-panel h4,.why b,.risk b,.gap b{display:block;font-size:15px;font-weight:600;color:var(--accent);margin:0 0 6px;letter-spacing:0;text-transform:none}
+.why b,.risk b,.gap b{display:inline;margin:0}
+.about,.key{margin:0 0 16px}
+.try,.apply-panel{background:var(--accent-soft);border-radius:16px;padding:16px 20px;margin:18px 0}
+.try ul,.apply-panel ol{margin-bottom:0}
+.measure{color:var(--muted)}
+.key-point{display:block;background:var(--sage-soft);border-radius:16px;padding:16px 20px;margin:18px 0}
+.key-point .point-label{color:var(--sage)}
+.key-point strong{display:block;font-size:18px;line-height:1.4;margin:0 0 6px}
+.key-point p{margin:0;color:var(--ink)}
+.flow-block{margin:18px 0}
+.flow-label span{color:var(--faint);font-weight:400}
+.mini-flow{list-style:none;padding:0;counter-reset:none}
+.mini-flow li{display:flex;gap:12px;align-items:baseline}
+.flow-index{color:var(--accent);font-weight:700;font-size:14px;min-width:22px}
+.apply-caption{color:var(--muted)}
+.why,.risk,.gap{margin:14px 0}
+.risk,.gap{color:var(--muted)}
+.srcline{margin-top:10px}
+details{margin:16px 0 4px;border-top:1px solid var(--line);padding-top:12px}
+summary{cursor:pointer;color:var(--accent);font-weight:600;font-size:15.5px;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"+ ";}
+details[open] summary::before{content:"− ";}
+details[open] summary{margin-bottom:10px}
+summary span{display:none}
+dl{margin:0}
+dt{font-weight:600;color:var(--accent);font-size:15px;margin-top:10px}
+dd{margin:2px 0 0}
+.links{display:flex;flex-wrap:wrap;gap:6px 18px;margin:18px 0 0;padding-top:14px;border-top:1px solid var(--line);font-size:15.5px}
+.links a{font-weight:600}
+.links svg,.src svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;vertical-align:-1px;margin-right:4px}
+
+/* Figures */
+figure{margin:20px 0;max-width:100%}
+.shot{position:relative;background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;cursor:zoom-in;margin-inline:auto}
+.shot img{display:block;width:auto;max-width:100%;height:auto;margin-inline:auto}
+.shot .badge{position:absolute;top:8px;left:8px;background:rgba(255,253,249,.92);color:var(--muted);font-size:12px;padding:2px 9px;border-radius:999px}
+button.zoom{all:unset;display:block;width:100%;cursor:zoom-in}
+button.zoom span{display:none}
+figcaption{color:var(--muted);font-size:14.5px;line-height:1.5;margin-top:8px}
+figcaption b{color:var(--ink)}
+.figbar{color:var(--muted);font-size:14px}
+
+/* Watch / radar / plan / meta */
+.watch-item h4{margin:0 0 4px}
+.watch-item .who{margin:4px 0 10px}
+.watch-item p:last-of-type{margin-bottom:8px}
+.watch-item .src{font-weight:600}
+.radar{margin:0;padding-left:20px}
+.radar li{margin-bottom:12px}
+.radar a{text-decoration:none!important}
+.checks{display:grid;gap:8px}
+.check{display:flex;gap:12px;align-items:flex-start;background:var(--card);border-radius:16px;padding:14px 18px;cursor:pointer;user-select:none}
+.check .box{width:22px;height:22px;flex:0 0 auto;border:2px solid var(--faint);border-radius:7px;display:flex;align-items:center;justify-content:center;margin-top:2px;background:none;padding:0}
+.check .box svg{width:13px;height:13px;stroke:#fff;stroke-width:3;fill:none;opacity:0}
+.check.done .box{background:var(--sage);border-color:var(--sage)}
+.check.done .box svg{opacity:1}
+.check.done .txt{color:var(--faint);text-decoration:line-through}
+.check .txt{flex:1}
+.check .when{color:var(--muted);font-size:13px;background:var(--sky-soft);border-radius:999px;padding:2px 10px;white-space:nowrap}
+.review-box label{display:flex;gap:12px;align-items:flex-start;margin:0 0 10px;cursor:pointer}
+.review-box label:last-child{margin-bottom:0}
+.review-box input[type=checkbox]{width:20px;height:20px;margin-top:4px;accent-color:var(--sage);flex:0 0 auto}
+.meta{font-size:14.5px;color:var(--muted)}
+.meta>div{margin-bottom:4px}
+.meta b{color:var(--ink);font-weight:600;margin-right:6px}
+.funnel{color:var(--muted)}
+.filtered{display:flex;flex-wrap:wrap;gap:8px 14px;font-size:14.5px;color:var(--muted)}
+.plan{background:var(--card);border-radius:var(--r);padding:24px 28px 24px 48px}
+.top5{padding-left:22px;margin:0}
+.top5 li span{display:block;color:var(--muted);font-size:15px}
+.toc{list-style:none;padding:0;margin:0 0 14px;display:flex;flex-wrap:wrap;gap:6px 18px}
+.toc b{color:var(--faint);font-weight:600}
+
+/* Search and filters */
+.toolbar,.tools-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0}
+.search-label{display:block;width:100%}
+.search-label span{display:block;font-size:14px;color:var(--muted);margin-bottom:6px}
+input[type=search],.search{width:100%;flex:1 1 220px;font:inherit;font-size:16px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 16px;outline:none}
+input[type=search]:focus{border-color:var(--accent)}
+.flt,.reset{font:inherit;font-size:14.5px;border:0;border-radius:999px;padding:7px 14px;background:var(--bg);color:var(--muted);cursor:pointer}
+.box .flt{background:var(--bg)}
+.flt.on{background:var(--accent);color:#fff}
+.reset{background:none;color:var(--accent);font-weight:600}
+.result,.found,.empty{color:var(--muted);font-size:14.5px;margin:6px 0 0}
+
+/* Desktop sidebar (AI Engineering list) */
+.side{display:none}
+@media (min-width:1320px){
+  .side{display:block;position:fixed;left:24px;top:84px;width:250px;max-height:calc(100vh - 110px);overflow:auto;font-size:13.5px;line-height:1.4;scrollbar-width:thin}
+  .side ol{padding-left:22px;margin:0}
+  .side li{margin-bottom:8px}
+  .side a{color:var(--muted)}
+}
+
+/* Lightbox */
+#lb{position:fixed;inset:0;z-index:200;background:rgba(43,40,38,.9);display:none;flex-direction:column;align-items:center;justify-content:center;padding:64px 16px 32px;overflow:auto;cursor:zoom-out}
+#lb.on,#lb.open{display:flex}
+#lb img{max-width:94vw;max-height:78vh;border-radius:12px;background:#fff}
+#lbbox,.lbinner{max-width:94vw;background:#fff;border-radius:12px;overflow:auto;max-height:calc(100vh - 140px)}
+#lbbox img,.lbinner img{display:block;width:100%;height:auto;max-width:100%;max-height:none;border-radius:0}
+#lb .lbcap{color:#f5f0e8;font-size:14.5px;line-height:1.5;margin-top:14px;max-width:760px;text-align:center}
+#lb .lbbtn,#lb .lbsrc{margin-top:12px;display:inline-flex;gap:8px;align-items:center;background:var(--card);color:var(--ink);padding:10px 18px;border-radius:999px;font-weight:600;font-size:15px;min-height:44px}
+#lb .lbbtn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2}
+#lb .close{position:fixed;top:14px;right:14px;width:44px;height:44px;border-radius:50%;border:0;background:var(--card);color:var(--ink);font-size:26px;line-height:44px;text-align:center;cursor:pointer;padding:0}
+
+/* Phones */
+@media (max-width:640px){
+  body{font-size:16.5px}
+  .hero{padding-top:28px}
+  h1{font-size:31px}
+  h2{font-size:25px}
+  h3{font-size:21px}
+  .sub,.hero>.lead,.hero .wrap>.lead{font-size:17px}
+  .talk,.box,.review-box,.watch-item,.meta,.funnel,.trick,.item,.card,.filtered{padding:20px 18px;border-radius:18px}
+  .try,.apply-panel,.key-point{padding:14px 16px;margin-left:-4px;margin-right:-4px}
+  .lead-in,.gist,.copy p,.about p{font-size:17px}
+  .shead{margin-top:40px}
+  .plan{padding:20px 18px 20px 38px}
+  .nav-in{padding:8px 12px;gap:10px}
+  .brand{font-size:14px}
+  .check{padding:12px 14px}
+  .check{flex-wrap:wrap}
+  .check .when{margin-left:34px}
+  figure{margin:16px -6px}
+  article .about,article .key{padding:0!important;background:none!important;border:0!important}
+}
+</style>
+<style data-page>
+  .wrap{max-width:900px}
+  section{padding-bottom:8px}
+  .hero-grid{display:grid;grid-template-columns:1.25fr .95fr;gap:var(--gap);align-items:stretch;margin-top:8px}
+  .thesis-card{background:var(--card);border-radius:var(--r);padding:26px 28px}
+  .thesis-card .lab{font-size:15px;font-weight:600;color:var(--accent);margin-bottom:8px}
+  .thesis-card p{font-size:19px;line-height:1.5;font-weight:500;margin:0}
+  .thesis-card .accent{color:var(--accent);font-weight:600}
+  .cover{position:relative;display:block;border-radius:var(--r);overflow:hidden;background:var(--card);min-height:220px}
+  .cover img{width:100%;height:100%;object-fit:cover;display:block}
+  .cover .ribbon{position:absolute;left:12px;bottom:12px;right:12px;background:rgba(255,253,249,.94);color:var(--muted);font-size:14px;padding:8px 12px;border-radius:12px}
+  .src{display:inline-flex;gap:6px;align-items:center;font-size:14px;font-weight:600;color:var(--accent);white-space:nowrap}
+  .src svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2}
+  .shead .src{margin-left:auto}
+  .grid{display:grid;gap:var(--gap)}
+  .g2{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .grid .card{margin:0;padding:22px 24px}
+  .card h3{font-size:19px;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+  .card h3 .ic{width:32px;height:32px;border-radius:10px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;font-size:16px;flex:0 0 auto}
+  .card p{margin:0 0 10px;color:var(--muted)}
+  .card p:last-child{margin-bottom:0}
+  .card strong{color:var(--ink)}
+  .card ul{margin:6px 0 0;padding-left:20px;color:var(--muted)}
+  .card li{margin-bottom:6px}
+  .card .mini{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap}
+  .canvas{background:var(--card);border-radius:var(--r);padding:14px}
+  .canvas svg{width:100%;height:auto;display:block}
+  svg text{font-family:var(--sans)}
+  .cap-hand{font-size:14.5px;color:var(--muted);text-align:center;padding:8px 0 2px}
+  .tbl{width:100%;border-collapse:collapse;font-size:15px;background:var(--card);border-radius:14px;overflow:hidden}
+  .tbl th,.tbl td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  .tbl th{background:var(--accent-soft);color:var(--accent);font-size:13.5px;font-weight:600}
+  .tbl tr:last-child td{border-bottom:none}
+  .tbl .best{color:var(--sage);font-weight:700}
+  .quotes{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
+  .quote{background:var(--card);border-radius:18px;padding:20px 22px;border-left:4px solid var(--accent-soft)}
+  .quote .q{font-size:18px;line-height:1.45;font-weight:500}
+  .quote .tr{margin-top:8px;font-size:15px;color:var(--muted)}
+  .quote .m{margin-top:10px;font-size:14px;color:var(--muted);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .facts{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--gap)}
+  .fact{background:var(--card);border-radius:18px;padding:18px 14px;text-align:center}
+  .fact .n{font-size:30px;font-weight:700;color:var(--accent);line-height:1.15}
+  .fact .l{font-size:14px;color:var(--muted);margin-top:4px}
+  .tools{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
+  .tool-col{background:var(--card);border-radius:var(--r);padding:20px 24px}
+  .tool-col h3{font-size:15px;color:var(--accent);margin-bottom:8px}
+  .tool{display:flex;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:15px}
+  .tool:last-child{border-bottom:none}
+  .tool .name{font-weight:600;min-width:150px;flex:0 0 auto}
+  .tool .desc{color:var(--muted)}
+  .pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+  .pill{font-size:13.5px;padding:3px 12px;border-radius:999px;background:var(--lav-soft);color:#5a5470}
+  .pill.good{background:var(--sage-soft);color:var(--sage)}
+  .pill.bad{background:var(--accent-soft);color:var(--accent)}
+  .checks{grid-template-columns:1fr 1fr}
+  .note{font-size:15px;color:var(--muted);background:var(--sky-soft);border-radius:14px;padding:14px 18px;margin-top:16px}
+  .note b{color:var(--ink)}
+  .sub-h{font-size:20px;margin:30px 0 12px}
+  .modes{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--gap)}
+  .mode{background:var(--card);border-radius:18px;padding:18px 20px;position:relative}
+  .mode .tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:600;padding:2px 10px;border-radius:8px;margin-bottom:8px}
+  .mode.off .tag{background:var(--lav-soft);color:#5a5470}
+  .mode.obs .tag{background:var(--sky-soft);color:var(--ink)}
+  .mode.enf .tag{background:var(--accent-soft);color:var(--accent)}
+  .mode p{margin:0;color:var(--muted)}
+  @media(max-width:840px){
+    .hero-grid,.g2,.g3,.quotes,.tools,.checks,.modes{grid-template-columns:1fr}
+    .facts{grid-template-columns:repeat(2,1fr)}
+  }
+  @media(max-width:560px){
+    .tool{flex-direction:column;gap:2px}
+    .tool .name{min-width:0}
+    .thesis-card,.tool-col{padding:20px 18px}
+  }
+</style>
+
+<style data-visual-html-responsive="v1">
+:root {
+  --page-gutter: 22px;
+  --gutter: 22px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  max-width: 100%;
+}
+
+body {
+  overflow-x: visible !important;
+}
+
+.wrap,
+.nav-in,
+footer,
+[data-mobile-container] {
+  width: 100% !important;
+  margin-inline: auto;
+  padding-inline: var(--page-gutter) !important;
+}
+
+section {
+  scroll-margin-top: 70px;
+}
+
+.grid > *,
+.hero-grid > *,
+.split > *,
+.quotes > *,
+.checks > *,
+.facts > *,
+.tools > *,
+.debate > *,
+.nav-links,
+.navlinks,
+.shead > *,
+.sec-head > *,
+.tl-item,
+.timeline > *,
+[data-mobile-stack] > * {
+  min-width: 0;
+}
+
+img,
+video,
+audio,
+canvas,
+iframe,
+figure {
+  max-width: 100% !important;
+}
+
+img,
+video,
+canvas {
+  height: auto;
+}
+
+video,
+audio,
+iframe {
+  display: block;
+  width: 100% !important;
+}
+
+iframe {
+  height: auto !important;
+  aspect-ratio: 16 / 9;
+  border: 0;
+}
+
+svg {
+  max-width: 100%;
+}
+
+pre,
+table,
+.tbl,
+[data-mobile-scroll] {
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+table,
+.tbl {
+  display: block;
+}
+
+[data-mobile-scroll] > svg {
+  width: 640px !important;
+  min-width: 640px !important;
+  max-width: none !important;
+  height: auto;
+}
+
+.k,
+.srcline,
+.srcline code,
+.eyebrow,
+.chip,
+.pill,
+.tag,
+.au,
+.src,
+.tc,
+.t,
+.timecode,
+.trick-head h3,
+.item-head h3,
+.check .txt,
+.talk p,
+.trick p,
+.trick li,
+.item p,
+.item li,
+.card p,
+.card li,
+.quote .q,
+.quote .ru,
+blockquote .ru,
+.tl-item p,
+.timeline p,
+.deb li,
+.callout,
+.fact .d,
+.tool .desc,
+[data-mobile-copy],
+[data-mobile-copy] p,
+[data-mobile-copy] li,
+[data-mobile-copy] dd,
+[data-mobile-wrap],
+code:not(pre code),
+h1,
+h2,
+h3,
+h4 {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.eyebrow,
+.chip,
+.pill,
+.tag,
+.au,
+.src,
+.links .src {
+  max-width: 100%;
+}
+
+.src,
+.links .src {
+  white-space: normal !important;
+}
+
+@media (max-width: 640px) {
+  :root {
+    --page-gutter: 18px;
+    --gutter: 18px;
+    --radius: 14px;
+  }
+
+  .nav-in,
+  nav .wrap {
+    min-height: 60px;
+    height: auto !important;
+    gap: 8px !important;
+    padding-block: 8px !important;
+  }
+
+  .brand,
+  .navbrand {
+    display: none !important;
+  }
+
+  .nav-links,
+  .navlinks {
+    width: 100%;
+    margin-left: 0 !important;
+    padding-bottom: 2px;
+    justify-content: space-between;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .nav-links::-webkit-scrollbar,
+  .navlinks::-webkit-scrollbar {
+    display: block;
+    height: 2px;
+  }
+
+  nav a,
+  a.src,
+  a.tc,
+  a.t,
+  a.timecode,
+  a.btn,
+  button,
+  [role="button"],
+  .lbbtn,
+  #lb .close,
+  .lightbox .close,
+  [data-seek] {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  nav a,
+  a.src,
+  a.tc,
+  a.t,
+  a.timecode,
+  a.btn,
+  button,
+  [role="button"],
+  .lbbtn,
+  #lb .close,
+  .lightbox .close,
+  a[data-seek],
+  button[data-seek],
+  span[data-seek] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .nav-links a,
+  .navlinks a {
+    flex: 0 0 auto;
+    padding: 9px 8px !important;
+  }
+
+  section {
+    padding-block: 52px 36px !important;
+    scroll-margin-top: 56px !important;
+  }
+
+  header.hero,
+  .hero {
+    padding-block: 24px 24px !important;
+  }
+
+  .hero h1 {
+    font-size: clamp(30px, 8vw, 36px) !important;
+    line-height: 1.1;
+    margin-top: 18px;
+  }
+
+  .g2,
+  .g3,
+  .g4,
+  .grid:not(.g2):not(.g3):not(.g4),
+  .hero-grid,
+  .split,
+  .quotes,
+  .checks,
+  .facts,
+  .tools,
+  .debate,
+  [data-mobile-stack="grid"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  [data-mobile-stack="flex"] {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .canvas:not([data-mobile-diagram="reflow"]),
+  figure:not([data-mobile-diagram="reflow"]):has(> svg[viewBox]) {
+    max-width: 100%;
+    overflow-x: auto !important;
+    overscroll-behavior-inline: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .canvas:not([data-mobile-diagram="reflow"]) > svg[viewBox]:not([data-mobile-diagram="reflow"]),
+  figure:not([data-mobile-diagram="reflow"]) > svg[viewBox]:not([data-mobile-diagram="reflow"]) {
+    width: 640px !important;
+    min-width: 640px !important;
+    max-width: none !important;
+    height: auto;
+  }
+
+  .talk,
+  .trick,
+  .item,
+  .card,
+  .quote,
+  .fact,
+  .check:not(ul),
+  .check > li,
+  .deb,
+  .thesis,
+  .thesis-card,
+  blockquote,
+  .callout,
+  [data-mobile-card] {
+    padding: 20px 18px !important;
+  }
+
+  blockquote {
+    margin-inline: 0 !important;
+  }
+
+  .trick-head,
+  .item-head,
+  .shead,
+  .sec-head,
+  .code .bar,
+  .tl-head,
+  blockquote footer {
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .shead,
+  .sec-head {
+    align-items: flex-start;
+    margin-bottom: 20px !important;
+  }
+
+  .shead h2,
+  .sec-head h2 {
+    font-size: 24px !important;
+  }
+
+  .shead .src,
+  .sec-head .src {
+    margin-left: 0 !important;
+  }
+
+  .trick-head .tnum,
+  .item-head .tnum {
+    min-width: 38px;
+    height: 38px;
+    font-size: 19px;
+  }
+
+  .trick-head h3,
+  .item-head h3 {
+    padding-top: 4px;
+    font-size: 20px;
+  }
+
+  .who {
+    padding-left: 0;
+  }
+
+  .about,
+  .key,
+  .try,
+  .risk {
+    padding: 15px 16px;
+  }
+
+  .hero .sub,
+  .hero .lede,
+  .hero .lead,
+  .lead,
+  .lede,
+  .sec-sub,
+  .talk p,
+  .trick p,
+  .trick li,
+  .item p,
+  .item li,
+  .card p,
+  .card li,
+  .quote .q,
+  .quote .ru,
+  blockquote .ru,
+  .tl-item p,
+  .timeline p,
+  .check .txt,
+  .check > li,
+  .deb li,
+  .callout,
+  .fact .d,
+  .tool .desc,
+  .watch-item p,
+  [data-mobile-copy],
+  [data-mobile-copy] p,
+  [data-mobile-copy] li,
+  [data-mobile-copy] dd {
+    font-size: 16px !important;
+  }
+
+  .fact {
+    align-items: flex-start;
+  }
+
+  .fact .v {
+    min-width: 0 !important;
+  }
+
+  .tl {
+    padding-left: 24px;
+  }
+
+  .tl-thumbs .shot {
+    width: 100% !important;
+  }
+
+  .links {
+    align-items: stretch;
+  }
+
+  .links .src {
+    min-height: 44px;
+    padding: 9px 11px;
+  }
+
+  .check:not(ul) {
+    flex-wrap: wrap;
+  }
+
+  .check .txt {
+    flex: 1 1 220px;
+  }
+
+  #lb,
+  .lightbox {
+    padding: 16px !important;
+  }
+
+  footer {
+    padding-block: 36px 60px !important;
+  }
+}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+
+<nav>
+  <div class="nav-in">
+    <div class="brand"><span class="dot"></span>Верификация в&nbsp;Claude&nbsp;Code</div>
+    <div class="nav-links">
+      <a href="#why">Зачем</a>
+      <a href="#tests">Три теста</a>
+      <a href="#team">Практики</a>
+      <a href="#gate">Gate</a>
+      <a href="#evals">Оценка</a>
+      <a href="#rules">Правила</a>
+      <a href="#apply">Как&nbsp;применить</a>
+    </div>
+  </div>
+</nav>
+
+<header class="wrap hero">
+  <span class="eyebrow">● Статья · x.com · 17 ноября 2026</span>
+  <h1>Как команда Claude Code проверяет работу агентов</h1>
+  <p class="sub">Около 90% кода Claude Code пишет и ревьюит сам Claude. Статья объясняет, какие тесты и проверки позволяют доверить агентам столько работы и запускать их десятками.</p>
+  <div class="chips">
+    <span class="chip">✍️ <b>Addy Osmani</b></span>
+    <span class="chip">📅 17.11.2026</span>
+    <span class="chip">⏱ <b>~14 мин</b></span>
+    <span class="chip">🌐 x.com</span>
+  </div>
+  <div class="hero-grid">
+    <div class="thesis-card">
+      <div class="lab">Главный тезис</div>
+      <p>Число агентов, которых можно запускать параллельно, ограничено тем, как они <span class="accent">доказывают свою работу</span>. Если проверка автоматическая и надёжная, человек перестаёт читать каждый diff и <span class="accent">определяет, что значит «готово»</span>, а затем смотрит на доказательства.</p>
+    </div>
+    <a class="cover" href="https://x.com/addyosmani/status/2122590683055993308" target="_blank" rel="noopener">
+      <img src="assets/img-00.jpg" data-origin="article" alt="Обложка статьи: How the Claude Code team thinks about verification и три значка — E2E, Property, Differential">
+      <div class="ribbon">Читать оригинал на x.com ↗</div>
+    </a>
+  </div>
+</header>
+
+<section class="wrap" style="padding-top:30px">
+  <div class="shead rv"><span class="num">TL;DR</span><h2>Суть за минуту</h2></div>
+  <div class="grid g2">
+    <div class="card rv"><h3><span class="ic">🔁</span>Петля проверки</h3><p>Без автоматической проверки человек успевает следить за одним-двумя Claude. С ней команда запускает десятки и сотни агентов. Отдельный grader с рубрикой поднял успешность задач до 10 пунктов.</p></div>
+    <div class="card rv"><h3><span class="ic">🧪</span>Три вида тестов</h3><p><strong>E2E</strong> трудно обмануть: фича работает целиком или нет. <strong>Property</strong> находят крайние случаи, которые упускают и люди, и агенты. <strong>Differential</strong> сверяют новую систему со старой при миграции.</p></div>
+    <div class="card rv"><h3><span class="ic">🚀</span>Запуск важнее тестов</h3><p>Claude запускает приложение, как QA-инженер: через skill <code>verify</code>, расширение Chrome, мобильный MCP или локальный сервис. После трёх неудачных раундов исправления он зовёт человека.</p></div>
+    <div class="card rv"><h3><span class="ic">🛡️</span>Проверки вне досягаемости</h3><p>Изменение не может править проверку, которая его оценивает. Gate вводят через режим observe, ревьюеров оценивают по реальным откатам, а пропущенные баги превращают в правила и регулярно чистят.</p></div>
+  </div>
+</section>
+
+<section id="why" class="wrap">
+  <div class="shead rv">
+    <span class="num">01</span><h2>Зачем агенту петля проверки</h2>
+    <a class="src" href="https://x.com/addyosmani/status/2122590683055993308" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M14 5h5v5"/><path d="M19 5l-9 9"/><path d="M19 13v6H5V5h6"/></svg>в статье</a>
+  </div>
+  <p class="lead rv">В команде Claude Code около 90% кода пишет и ревьюит Claude. При таком объёме узким местом становится проверка: если человек проверяет всё сам, он успевает вести одного-двух агентов. Когда агент сам приносит доказательства, что изменение работает, параллельно можно запускать десятки и сотни.</p>
+
+  <div class="rv"><div class="canvas" data-mobile-scroll>
+    <svg viewBox="0 0 680 330" role="img" aria-label="Схема петли верификации: агент меняет код, запускает проверки, при провале исправляет, после трёх раундов зовёт человека, повторяющийся провал становится правилом">
+      <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--muted)"/></marker></defs>
+      <rect x="20" y="40" width="150" height="64" rx="14" fill="var(--lav-soft)"/>
+      <text x="95" y="68" text-anchor="middle" font-size="15" font-weight="600" fill="var(--ink)">Агент</text>
+      <text x="95" y="88" text-anchor="middle" font-size="13" fill="var(--ink)">меняет код</text>
+      <rect x="250" y="40" width="180" height="64" rx="14" fill="var(--sky-soft)"/>
+      <text x="340" y="66" text-anchor="middle" font-size="15" font-weight="600" fill="var(--ink)">Проверка</text>
+      <text x="340" y="86" text-anchor="middle" font-size="13" fill="var(--ink)">тесты, сборка, линтер, E2E</text>
+      <rect x="510" y="40" width="150" height="64" rx="14" fill="var(--sage-soft)"/>
+      <text x="585" y="68" text-anchor="middle" font-size="15" font-weight="600" fill="var(--ink)">Commit / PR</text>
+      <text x="585" y="88" text-anchor="middle" font-size="13" fill="var(--ink)">с доказательством</text>
+      <line x1="170" y1="72" x2="246" y2="72" stroke="var(--muted)" stroke-width="2" marker-end="url(#ar)"/>
+      <line x1="430" y1="72" x2="506" y2="72" stroke="var(--muted)" stroke-width="2" marker-end="url(#ar)"/>
+      <text x="468" y="62" text-anchor="middle" font-size="13" fill="var(--ink)">ок</text>
+      <rect x="250" y="160" width="180" height="56" rx="14" fill="var(--accent-soft)"/>
+      <text x="340" y="185" text-anchor="middle" font-size="15" font-weight="600" fill="var(--ink)">Провал</text>
+      <text x="340" y="203" text-anchor="middle" font-size="13" fill="var(--ink)">Claude чинит сам</text>
+      <line x1="340" y1="104" x2="340" y2="156" stroke="var(--muted)" stroke-width="2" marker-end="url(#ar)"/>
+      <path d="M250 188 C 200 188, 200 120, 250 96" fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+      <text x="168" y="150" text-anchor="middle" font-size="13" fill="var(--ink)">до 3 раундов</text>
+      <rect x="510" y="160" width="150" height="56" rx="14" fill="var(--card)" stroke="var(--accent)" stroke-width="2"/>
+      <text x="585" y="185" text-anchor="middle" font-size="15" font-weight="600" fill="var(--ink)">Человек</text>
+      <text x="585" y="203" text-anchor="middle" font-size="13" fill="var(--ink)">после 3 неудач</text>
+      <line x1="430" y1="188" x2="506" y2="188" stroke="var(--muted)" stroke-width="2" marker-end="url(#ar)"/>
+      <rect x="20" y="250" width="410" height="56" rx="14" fill="var(--lav-soft)"/>
+      <text x="225" y="274" text-anchor="middle" font-size="15" font-weight="600" fill="var(--ink)">Повторяющийся провал → правило</text>
+      <text x="225" y="293" text-anchor="middle" font-size="13" fill="var(--ink)">hook или явное правило в CLAUDE.md</text>
+      <line x1="340" y1="216" x2="340" y2="246" stroke="var(--muted)" stroke-width="2" marker-end="url(#ar)"/>
+      <line x1="95" y1="250" x2="95" y2="108" stroke="var(--muted)" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+    </svg>
+    <div class="cap-hand">Схема конспекта: петля проверки по тексту статьи</div>
+  </div></div>
+
+  <div class="grid g3" style="margin-top:22px">
+    <div class="card rv"><h3><span class="ic">📈</span>Grader работает</h3><p>Во внутреннем тесте на генерацию структурированных файлов отдельный grader проверял работу Claude по рубрике. Успешность выросла до 10 пунктов по сравнению с обычным циклом промптов, сильнее всего на самых трудных задачах.</p></div>
+    <div class="card rv"><h3><span class="ic">💸</span>Проверка подешевела</h3><p>Тесты, бенчмарки, спецификации и полные прогоны раньше стоили дорого. Теперь агент генерирует их так же быстро, как код. Дальше они работают как обычные программы, и частые запуски почти не тратят токенов.</p></div>
+    <div class="card rv"><h3><span class="ic">🔒</span>Петлю замыкают</h3><p>Если агент раз за разом валит тест, который ищет данные пользователей в логах, автор предлагает добавить hook или явное правило в <code>CLAUDE.md</code>. По его словам, это «в основном» убирает повтор ошибки.</p></div>
+  </div>
+</section>
+
+<section id="tests" class="wrap">
+  <div class="shead rv">
+    <span class="num">02</span><h2>Три вида тестов, в которые стоит вложиться</h2>
+    <a class="src" href="https://x.com/addyosmani/status/2122590683055993308#:~:text=Not%20all%20tests%20are%20created%20equal%3A%203%20tests%20worth%20investing%20in" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M14 5h5v5"/><path d="M19 5l-9 9"/><path d="M19 13v6H5V5h6"/></svg>в статье</a>
+  </div>
+  <p class="lead rv">Тип теста важен меньше, чем два свойства: стабильность и скорость. Нестабильный (flaky) тест учит агента перезапускать проверку вместо исправления кода. Медленный тест агент запускает реже, и сбой труднее привязать к конкретному изменению. Тяжёлые тесты автор советует гонять до коммита.</p>
+
+  <h3 class="sub-h rv">E2E: если выбирать один тип</h3>
+  <p class="rv">End-to-end тест описывает реальный путь пользователя: положить товар в корзину, оформить заказ, увидеть страницу подтверждения. Его трудно обмануть: фича либо работает целиком, либо нет. Unit-тест можно пройти и всё равно сломать фичу, потому что ни агент, ни тест не видят задачу целиком.</p>
+  <figure class="rv">
+    <div class="shot" data-full="assets/img-01.jpg" data-href="https://x.com/addyosmani/status/2122590683055993308#:~:text=E2E%20tests" data-cap="Слева падение unit-теста: в checkout.test.ts только «Error: Timeout after 30s». Справа падение E2E-теста checkout.spec.ts: trace шагов (Register и Add item to cart прошли, Checkout упал), скриншот страницы с ошибкой «Payment form failed to load» и вывод: кнопка «Place order» осталась неактивной, потому что форма оплаты не загрузилась.">
+      <img src="assets/img-01.jpg" data-origin="article" alt="Сравнение падения unit-теста (только таймаут) и E2E-теста (trace, скриншот и описание шага, который упал)">
+      <span class="badge">рис. из статьи</span>
+      <span class="zoom"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></span>
+    </div>
+    <figcaption><b>Что показано:</b> при падении unit-теста агент видит только таймаут. E2E-тест отдаёт trace шагов, скриншот и описание: на шаге Checkout кнопка «Place order» осталась неактивной, потому что форма оплаты не загрузилась.</figcaption>
+  </figure>
+  <p class="rv">Агенту нужны «руки и глаза» в работающей системе. Для этого автор предлагает skill, который поднимает приложение, управляет им и осматривает его через <a href="https://chromedevtools.github.io/devtools-protocol/" target="_blank" rel="noopener">CDP</a>, симуляторы или API-обвязку. Карта фич (feature map) служит агенту и путеводителем, и рубрикой оценки: в ней фичи описаны с точки зрения пользователя, с путями, горячими клавишами, селекторами и ожидаемым результатом.</p>
+
+  <h3 class="sub-h rv">Property-тесты: ограничения, которые не должны ломаться</h3>
+  <p class="rv">Обычные тесты проверяют то, что автор кода считал опасным. Property-тест начинается с утверждения, которое не должно нарушаться. Затем библиотека (<a href="https://fast-check.dev/" target="_blank" rel="noopener">fast-check</a> для JS/TS, <a href="https://hypothesis.readthedocs.io/en/latest/" target="_blank" rel="noopener">Hypothesis</a> для Python, <a href="https://proptest-rs.github.io/proptest/" target="_blank" rel="noopener">proptest</a> для Rust) генерирует тысячи входов и пытается его опровергнуть. Такие входы не несут того же перекоса, что и агент, написавший код.</p>
+  <table class="tbl rv" style="margin-top:14px">
+    <tr><th>Свойство</th><th>Что утверждает</th></tr>
+    <tr><td><b>Round-trip</b></td><td>Закодировали X и раскодировали — получили X. Подходит для парсинга и сериализации.</td></tr>
+    <tr><td><b>Инвариант</b></td><td>Условие всегда истинно, например «баланс счёта не бывает отрицательным».</td></tr>
+    <tr><td><b>Идемпотентность</b></td><td>Повтор действия (миграции, нормализации, retry) даёт тот же эффект, что и одно выполнение.</td></tr>
+    <tr><td><b>Эквивалентность</b></td><td>Оптимизированный код возвращает тот же результат, что и наивный, но корректный.</td></tr>
+  </table>
+  <p class="rv" style="margin-top:14px">Отдельно автор выделяет переписывание кода: если спецификация разошлась с поведением в production, ей уже нельзя верить, а свойства по-прежнему проверяемы.</p>
+
+  <h3 class="sub-h rv">Differential-тесты: старая система как оракул</h3>
+  <p class="rv">При <a href="https://claude.com/resources/articles/ai-code-migration" target="_blank" rel="noopener">крупной миграции</a> поведение должно остаться прежним. Старую и новую систему запускают на одних входах; любое расхождение означает баг или ломающее изменение. На вход подают случайные данные или выборку production-трафика. Несущественные различия, например пробелы, нормализуют, а намеренные изменения поведения ведут списком одобренных.</p>
+
+  <table class="tbl rv" style="margin-top:18px">
+    <tr><th>Тип</th><th>Что ловит</th><th>Когда брать</th></tr>
+    <tr><td><b>E2E</b></td><td>Сломанный пользовательский путь, даже если unit-тесты зелёные</td><td>Почти всегда; первый выбор</td></tr>
+    <tr><td><b>Property</b></td><td>Крайние случаи, которые не пришли в голову ни человеку, ни агенту</td><td>Парсеры, сериализация, деньги, миграции, переписывание</td></tr>
+    <tr><td><b>Differential</b></td><td>Любое расхождение с прежним поведением</td><td>Миграции, где функциональность не должна меняться</td></tr>
+  </table>
+</section>
+
+<section id="team" class="wrap">
+  <div class="shead rv">
+    <span class="num">03</span><h2>Как проверяет команда Claude Code</h2>
+    <a class="src" href="https://x.com/addyosmani/status/2122590683055993308#:~:text=How%20the%20Claude%20Code%20team%20thinks%20about%20verification" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M14 5h5v5"/><path d="M19 5l-9 9"/><path d="M19 13v6H5V5h6"/></svg>в статье</a>
+  </div>
+  <p class="lead rv">Главное правило команды: проверить изменение значит его запустить. Изменение для iOS никто не выпустит, не открыв его в симуляторе, и к Claude относится то же.</p>
+
+  <div class="grid g2">
+    <div class="card rv"><h3><span class="ic">▶️</span>Skill verify</h3><p>Claude тестирует приложение как человек или QA-инженер: расширение Claude для Chrome для веба, iOS- или Android-MCP для мобильных, computer use для десктопа, локальный запуск для бэкенда.</p><p>Как поднять симулятор или приложение, описывают в skill <code>verify</code> в папке <code>.claude/skills/</code>, как можно ближе к нужному коду. Таких skills может быть сколько угодно. Claude вызывает <code>verify</code> перед коммитом. Это smoke-тест всей системы, поэтому его стоит сделать быстрым и надёжным: попросить Claude доработать его и нагрузить.</p>
+      <div class="mini"><span class="pill good">так команда проверяет почти все изменения</span><a class="src" href="https://x.com/addyosmani/status/2122590683055993308#:~:text=Verification%20means%20running%20the%20change" target="_blank" rel="noopener">в статье ↗</a></div></div>
+    <div class="card rv"><h3><span class="ic">🙋</span>Провал зовёт человека</h3><p>Каждое изменение никто не прочитает. Поэтому провалы проверок служат сигналом, где нужен человек. Claude запускает проверки и пытается исправить всё, что упало. Если проверка не проходит после трёх раундов, Claude останавливается и зовёт человека.</p>
+      <div class="mini"><span></span><a class="src" href="https://x.com/addyosmani/status/2122590683055993308#:~:text=Failing%20tests%20require%20human%20attention" target="_blank" rel="noopener">в статье ↗</a></div></div>
+    <div class="card rv"><h3><span class="ic">👤</span>Проверки пишут владельцы кода</h3><p>Владелец кода пишет для него проверки и дорабатывает их, пока они не начнут отмечать то же, что отметил бы он сам. Если проверка зовёт ревьюера, она объясняет причину, чтобы тот не восстанавливал её по diff.</p>
+      <div class="mini"><span></span><a class="src" href="https://x.com/addyosmani/status/2122590683055993308#:~:text=Code%20owners%20write%20their%20own%20checks" target="_blank" rel="noopener">в статье ↗</a></div></div>
+    <div class="card rv"><h3><span class="ic">📋</span>Чек-лист срабатывает по diff</h3><p>В чек-листе надёжности 39 пунктов. У каждого есть триггер, который виден в diff, сама проверка и ссылки на инциденты или PR, из которых он появился. Пример: «<code>--resume</code> загружает старые транскрипты». Если меняется хранение сессий или типы сообщений, проверяют, что новое поле безопасно загружается из старых транскриптов, где его нет.</p><p>Claude читает diff и проверяет только пункты с совпавшим триггером, обычно 3–10. Помнить прошлые аварии никому не нужно.</p>
+      <div class="mini"><span></span><a class="src" href="https://x.com/addyosmani/status/2122590683055993308#:~:text=Reliability%20checks%20trigger%20on%20the%20diff" target="_blank" rel="noopener">в статье ↗</a></div></div>
+    <div class="card rv"><h3><span class="ic">🔍</span>Один ревьюер, несколько раундов</h3><p>Второй, более дорогой ревьюер поверх основного часто работает хуже, чем настройка основного. Вместо этого команда ведёт <a href="https://code.claude.com/docs/en/code-review-customize" target="_blank" rel="noopener">REVIEW.md</a>: на что ревьюеру смотреть в этом коде. Каждый следующий раунд получает контекст прошлых раундов и прошлых провалов и не перепроверяет всё с нуля. Так дешевле, и находок больше.</p>
+      <div class="mini"><span></span><a class="src" href="https://x.com/addyosmani/status/2122590683055993308#:~:text=One%20reviewer%2C%20multiple%20rounds" target="_blank" rel="noopener">в статье ↗</a></div></div>
+    <div class="card rv"><h3><span class="ic">🚧</span>Изменение не правит свою проверку</h3><p>Если изменение может поменять проверку, которая его оценивает, проверка сломана. Code Review читает REVIEW.md из базовой или основной ветки, <a href="https://code.claude.com/docs/en/code-review-customize" target="_blank" rel="noopener">а не из изменений PR</a>. Ревью привязано к коммиту: если во время ревью кто-то пушит, результат устарел.</p><p>Дешёвые проверки идут первыми. Claude запускает тесты, сборку и линтер до открытия PR. Это можно закрепить <a href="https://code.claude.com/docs/en/hooks" target="_blank" rel="noopener">hook</a>, который запускает тесты по завершении работы Claude, или <a href="https://code.claude.com/docs/en/goal" target="_blank" rel="noopener">/goal</a> «тесты проходят».</p>
+      <div class="mini"><span></span><a class="src" href="https://x.com/addyosmani/status/2122590683055993308#:~:text=Changes%20can%27t%20modify%20their%20own%20checks" target="_blank" rel="noopener">в статье ↗</a></div></div>
+  </div>
+
+  <div class="quotes" style="margin-top:22px">
+    <div class="quote rv"><div class="q">«If a change can modify the check that judges it, the check is broken.»</div><div class="tr">Если изменение может поменять проверку, которая его оценивает, проверка сломана.</div>
+      <div class="m">— о защите правил <a class="src" href="https://x.com/addyosmani/status/2122590683055993308#:~:text=Changes%20can%27t%20modify%20their%20own%20checks" target="_blank" rel="noopener">в статье ↗</a></div></div>
+    <div class="quote rv"><div class="q">«A passing review on an out-of-date commit means nothing.»</div><div class="tr">Успешное ревью устаревшего коммита ничего не значит.</div>
+      <div class="m">— о привязке ревью к коммиту <a class="src" href="https://x.com/addyosmani/status/2122590683055993308#:~:text=Changes%20can%27t%20modify%20their%20own%20checks" target="_blank" rel="noopener">в статье ↗</a></div></div>
+  </div>
+</section>
+
+<section id="gate" class="wrap">
+  <div class="shead rv">
+    <span class="num">04</span><h2>Новый gate начинают с наблюдения</h2>
+    <a class="src" href="https://x.com/addyosmani/status/2122590683055993308#:~:text=Start%20a%20new%20gate%20in%20observe%20mode" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M14 5h5v5"/><path d="M19 5l-9 9"/><path d="M19 13v6H5V5h6"/></svg>в статье</a>
+  </div>
+  <p class="lead rv">В своих репозиториях команда помечает каждый коммит способом проверки. Метка бывает и «none», чтобы непроверенные коммиты находились запросом. Gate (шлюз, блокирующий коммит) не пропускает коммит, если в сессии не было <code>/code-review</code> или <code>/verify</code>. У него три режима.</p>
+  <div class="modes">
+    <div class="mode off rv"><span class="tag">off</span><p>Gate выключен.</p></div>
+    <div class="mode obs rv"><span class="tag">observe</span><p>Gate только записывает, что заблокировал бы. Команда разбирает ложные срабатывания и убеждается, что никому не мешает.</p></div>
+    <div class="mode enf rv"><span class="tag">enforce</span><p>Gate блокирует коммит. В сообщении коммита можно объяснить, почему проверки не было. После двух блокировок в сессии следующий коммит проходит, чтобы Claude не застрял.</p></div>
+  </div>
+  <div class="note rv"><b>Почему есть выход:</b> автор прямо признаёт, что Claude Code не идеален. Пропуск после двух блокировок защищает сессию от бесконечного цикла.</div>
+</section>
+
+<section id="evals" class="wrap">
+  <div class="shead rv">
+    <span class="num">05</span><h2>Проверять проверяющих на том, что важно</h2>
+    <a class="src" href="https://x.com/addyosmani/status/2122590683055993308#:~:text=Test%20your%20checks%20on%20what%20actually%20matters" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M14 5h5v5"/><path d="M19 5l-9 9"/><path d="M19 13v6H5V5h6"/></svg>в статье</a>
+  </div>
+  <p class="lead rv">Команда регулярно оценивает самих ревьюеров. Она считает, сколько смёрженных изменений откатили, сколько изменений мейнтейнер отклонил до мержа, и сравнивает их с подобранной по размеру выборкой изменений, которые остались чистыми.</p>
+  <div class="grid g2">
+    <div class="card rv"><h3><span class="ic">🧾</span>Формальный eval</h3><p>Команда Code Review собрала eval на прошлых инцидентах и откатах. Для каждого примера репозиторий возвращают в состояние на момент ревью, а ключ ответа — одно предложение о том, в чём был баг. Очки получает только находка, которая правильно описывает этот баг.</p><p>Смёрженные и стабильные изменения служат контролем от лишних срабатываний. Выборка для настройки отделена от фиксированного тестового набора.</p></div>
+    <div class="card rv"><h3><span class="ic">🎚️</span>Recall по этапам и важность</h3><p>Recall (доля найденных багов) измеряют отдельно для сырых находок, после верификации и в финальном ревью. Так видно, теряет ли система баги, которые уже нашла. Единая сквозная метрика этого не покажет.</p><p>Вторая ось — важность. Code Review помечает находки как <a href="https://code.claude.com/docs/en/code-review-pull-requests" target="_blank" rel="noopener">Important, Nit или Pre-existing</a>; Pre-existing значит, что автор изменения не отвечает за баг, который был и раньше. Recall поднимают до точки, после которой улучшение было бы подгонкой под eval, а не поиском багов.</p></div>
+  </div>
+</section>
+
+<section id="rules" class="wrap">
+  <div class="shead rv">
+    <span class="num">06</span><h2>Промахи превращают в правила</h2>
+    <a class="src" href="https://x.com/addyosmani/status/2122590683055993308#:~:text=Turn%20misses%20into%20rules" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M14 5h5v5"/><path d="M19 5l-9 9"/><path d="M19 13v6H5V5h6"/></svg>в статье</a>
+  </div>
+  <p class="lead rv">В репозитории Claude Code пропущенный баг становится правилом одним из двух способов.</p>
+  <div class="grid g2">
+    <div class="card rv"><h3><span class="ic">1</span>Из комментариев и откатов</h3><ul>
+      <li>Из комментариев человеческого code review и откатов PR извлекают повторяющиеся проблемы.</li>
+      <li>Кандидат в правило должен встретиться минимум в двух PR и распознаваться по diff.</li>
+      <li>Три агента пытаются его опровергнуть.</li>
+      <li>Человек ревьюит и одобряет правило в PR.</li></ul></div>
+    <div class="card rv"><h3><span class="ic">2</span>Повтор известного инцидента</h3><ul>
+      <li>Три поисковика багов прогоняют против PR, связанного с известным инцидентом.</li>
+      <li>Если баг находят хотя бы два, он считается обнаружимым.</li>
+      <li>Если баг пропущен на маленьком diff, это пробел, который стоит записать правилом в REVIEW.md.</li></ul></div>
+  </div>
+  <div class="grid g2" style="margin-top:var(--gap)">
+    <div class="card rv"><h3><span class="ic">🎲</span>Flaky-тесты</h3><p>Claude не может пропустить такой тест, добавить sleep или перезапускать до зелёного. Если корневую причину найти не удалось, Claude удаляет тест и записывает почему.</p></div>
+    <div class="card rv"><h3><span class="ic">🧹</span>Правила тоже чистят</h3><p>Тестовые наборы, шаги проверки и <code>.md</code>-файлы только растут, если их не трогать. Команда прибирает их по расписанию.</p></div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="shead rv"><span class="num">#</span><h2>В цифрах</h2></div>
+  <div class="facts">
+    <div class="fact rv"><div class="n">~90%</div><div class="l">кода команды пишет и ревьюит Claude</div></div>
+    <div class="fact rv"><div class="n">до 10</div><div class="l">пунктов прироста успешности с отдельным grader</div></div>
+    <div class="fact rv"><div class="n">39</div><div class="l">пунктов в чек-листе надёжности</div></div>
+    <div class="fact rv"><div class="n">3–10</div><div class="l">пунктов обычно срабатывает на один diff</div></div>
+    <div class="fact rv"><div class="n">3</div><div class="l">раунда исправлений, затем зовут человека</div></div>
+    <div class="fact rv"><div class="n">2</div><div class="l">блокировки gate, затем коммит проходит</div></div>
+  </div>
+</section>
+
+<section id="apply" class="wrap">
+  <div class="shead rv"><span class="num">✅</span><h2>Как применить</h2></div>
+  <p class="lead rv">Шаги ниже адаптируют практики статьи для своего проекта. Конкретные команды и пути взяты из статьи; порядок внедрения предлагаем мы.</p>
+  <div class="checks">
+    <div class="check rv"><div class="box"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg></div>
+      <div class="txt"><b>Заведите skill verify.</b> Положите в <code>.claude/skills/</code> рядом с кодом инструкцию, как поднять приложение и пройти ключевой пользовательский путь. Попросите Claude прогнать его несколько раз и убрать нестабильность.</div></div>
+    <div class="check rv"><div class="box"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg></div>
+      <div class="txt"><b>Начните с одного E2E-теста.</b> Возьмите главный путь пользователя и сделайте так, чтобы при падении тест отдавал trace шагов и скриншот, а не только таймаут.</div></div>
+    <div class="check rv"><div class="box"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg></div>
+      <div class="txt"><b>Добавьте property-тест.</b> Найдите в коде round-trip, инвариант, идемпотентность или эквивалентность и опишите его через fast-check, Hypothesis или proptest.</div></div>
+    <div class="check rv"><div class="box"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg></div>
+      <div class="txt"><b>При миграции сравнивайте системы.</b> Прогоните старую и новую версию на выборке трафика, нормализуйте шум и ведите список одобренных расхождений.</div></div>
+    <div class="check rv"><div class="box"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg></div>
+      <div class="txt"><b>Ограничьте попытки исправления.</b> Пропишите правило: после трёх неудачных раундов агент останавливается и зовёт человека с описанием провала.</div></div>
+    <div class="check rv"><div class="box"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg></div>
+      <div class="txt"><b>Держите правила вне PR.</b> REVIEW.md и конфигурация gate должны читаться из базовой ветки, чтобы изменение не могло ослабить свою проверку.</div></div>
+    <div class="check rv"><div class="box"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg></div>
+      <div class="txt"><b>Запускайте дешёвое до PR.</b> Настройте hook, который гоняет тесты, сборку и линтер, когда Claude заканчивает работу, или задайте <code>/goal</code> с проходящим набором тестов.</div></div>
+    <div class="check rv"><div class="box"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg></div>
+      <div class="txt"><b>Соберите чек-лист с триггерами.</b> Для каждого прошлого инцидента запишите триггер в diff, проверку и ссылку на PR. Агент проверяет только пункты с совпавшим триггером.</div></div>
+    <div class="check rv"><div class="box"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg></div>
+      <div class="txt"><b>Включайте gate через observe.</b> Сначала только логируйте, что было бы заблокировано, разберите ложные срабатывания, потом переходите в enforce с выходом после двух блокировок.</div></div>
+    <div class="check rv"><div class="box"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg></div>
+      <div class="txt"><b>Измеряйте ревьюера по откатам.</b> Сравнивайте долю откатов и отклонённых изменений с выборкой чистых изменений того же размера. Recall считайте отдельно на каждом этапе.</div></div>
+    <div class="check rv"><div class="box"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg></div>
+      <div class="txt"><b>Запретите обход flaky-тестов.</b> Без skip, sleep и перезапусков до зелёного: либо найти причину, либо удалить тест с записанным объяснением.</div></div>
+    <div class="check rv"><div class="box"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg></div>
+      <div class="txt"><b>Чистите правила по расписанию.</b> Регулярно пересматривайте CLAUDE.md, REVIEW.md и тестовые наборы и удаляйте то, что больше не окупает запуск.</div></div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="shead rv"><span class="num">🧰</span><h2>Ссылки и понятия</h2></div>
+  <div class="tools">
+    <div class="tool-col rv"><h3>// упомянуто в статье</h3>
+      <div class="tool"><a class="name" href="https://claude.dev/blog/solving-code-review-at-anthropic/" target="_blank" rel="noopener" data-mobile-wrap>Code review в Anthropic</a><span class="desc">как Claude ревьюит код команды и как устроен eval ревьюера</span></div>
+      <div class="tool"><a class="name" href="https://claude.com/blog/building-verification-loops-in-claude-code-with-skills" target="_blank" rel="noopener" data-mobile-wrap>Verification loops и skills</a><span class="desc">как дать агенту способ проверить результат</span></div>
+      <div class="tool"><a class="name" href="https://claude.com/blog/claude-managed-agents" target="_blank" rel="noopener" data-mobile-wrap>Claude Managed Agents</a><span class="desc">источник цифры про grader и рост до 10 пунктов</span></div>
+      <div class="tool"><a class="name" href="https://code.claude.com/docs/en/code-review-customize" target="_blank" rel="noopener" data-mobile-wrap>REVIEW.md</a><span class="desc">настройка Code Review; файл читается из базовой ветки</span></div>
+      <div class="tool"><a class="name" href="https://code.claude.com/docs/en/hooks" target="_blank" rel="noopener" data-mobile-wrap>Hooks</a><span class="desc">запуск тестов по событию, например по окончании работы Claude</span></div>
+      <div class="tool"><a class="name" href="https://code.claude.com/docs/en/goal" target="_blank" rel="noopener" data-mobile-wrap>/goal</a><span class="desc">цель сессии, например проходящий набор тестов</span></div>
+      <div class="tool"><a class="name" href="https://claude.com/resources/articles/ai-code-migration" target="_blank" rel="noopener" data-mobile-wrap>Миграции кода с AI</a><span class="desc">где differential-тесты особенно полезны</span></div>
+      <div class="tool"><a class="name" href="https://chromedevtools.github.io/devtools-protocol/" target="_blank" rel="noopener" data-mobile-wrap>CDP</a><span class="desc">Chrome DevTools Protocol для управления браузером в E2E</span></div>
+    </div>
+    <div class="tool-col rv"><h3>// ключевые понятия</h3>
+      <div class="pills">
+        <span class="pill good">verification loop</span><span class="pill good">grader по рубрике</span><span class="pill good">E2E</span><span class="pill good">property-based testing</span><span class="pill good">differential testing</span><span class="pill">skill verify</span><span class="pill">feature map</span><span class="pill">чек-лист с триггерами</span><span class="pill">REVIEW.md</span><span class="pill">gate: off / observe / enforce</span><span class="pill">recall по этапам</span><span class="pill">Important / Nit / Pre-existing</span><span class="pill bad">flaky-тесты</span><span class="pill bad">медленные тесты</span><span class="pill bad">проверка внутри PR</span><span class="pill bad">стопка ревьюеров</span>
+      </div>
+      <h3 style="margin-top:18px">// библиотеки property-тестов</h3>
+      <div class="tool"><a class="name" href="https://fast-check.dev/" target="_blank" rel="noopener">fast-check</a><span class="desc">JS/TS</span></div>
+      <div class="tool"><a class="name" href="https://hypothesis.readthedocs.io/en/latest/" target="_blank" rel="noopener">Hypothesis</a><span class="desc">Python</span></div>
+      <div class="tool"><a class="name" href="https://proptest-rs.github.io/proptest/" target="_blank" rel="noopener">proptest</a><span class="desc">Rust</span></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  Визуальный конспект статьи <b>«How the Claude Code team thinks about verification»</b> · Addy Osmani · x.com.<br>
+  Текст и рисунки взяты из статьи; схема петли проверки составлена для конспекта. <a href="https://x.com/addyosmani/status/2122590683055993308" target="_blank" rel="noopener">Открыть оригинал ↗</a>
+</footer>
+
+<div id="lb">
+  <span class="close">×</span>
+  <div class="lbcap" id="lbcap"></div>
+  <a class="lbbtn" id="lbbtn" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M14 5h5v5"/><path d="M19 5l-9 9"/></svg>Открыть в статье</a>
+</div>
+
+<script>
+(function(){
+  var prog=document.getElementById('progress');
+  function onScroll(){var h=document.documentElement;prog.style.width=((h.scrollTop)/(h.scrollHeight-h.clientHeight)*100)+'%';}
+  window.addEventListener('scroll',onScroll,{passive:true});onScroll();
+
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{threshold:.12});
+  document.querySelectorAll('.rv').forEach(function(el){io.observe(el);});
+
+  var navlinks=[].slice.call(document.querySelectorAll('.nav-links a'));
+  var secs=navlinks.map(function(a){return document.querySelector(a.getAttribute('href'));});
+  var spy=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){var id='#'+e.target.id;navlinks.forEach(function(a){a.classList.toggle('active',a.getAttribute('href')===id);});}});},{rootMargin:'-45% 0px -50% 0px'});
+  secs.forEach(function(s){if(s)spy.observe(s);});
+
+  var lb=document.getElementById('lb'),lbimg=document.createElement('img');lbimg.id='lbimg';lbimg.alt='';lb.insertBefore(lbimg,document.getElementById('lbcap'));var lbcap=document.getElementById('lbcap'),lbbtn=document.getElementById('lbbtn');
+  document.querySelectorAll('.shot[data-full]').forEach(function(s){
+    s.addEventListener('click',function(){
+      lbimg.src=s.getAttribute('data-full');
+      lbcap.textContent=s.getAttribute('data-cap')||'';
+      var href=s.getAttribute('data-href');
+      if(href){lbbtn.href=href;lbbtn.style.display='inline-flex';}else{lbbtn.style.display='none';}
+      lb.classList.add('on');
+    });
+  });
+  function close(){lb.classList.remove('on');lbimg.src='';}
+  lb.addEventListener('click',function(e){if(e.target===lb||e.target.classList.contains('close'))close();});
+  lbbtn.addEventListener('click',function(e){e.stopPropagation();});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')close();});
+
+  document.querySelectorAll('.check').forEach(function(c){c.addEventListener('click',function(){c.classList.toggle('done');});});
+})();
+</script>
+</body>
+</html>
